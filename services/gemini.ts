@@ -12,22 +12,25 @@ const getAiClient = () => {
 };
 
 /**
- * Simulates CellPose segmentation by asking Gemini to detect cells and return bounding boxes.
- * We then approximate the segmentation masks using ellipses within these boxes on the frontend.
+ * Analyzes the image using Gemini to detect specific objects defined by the target.
+ * Returns bounding boxes and labels for simulated segmentation.
  */
-export const detectCells = async (base64Image: string): Promise<CellAnnotation[]> => {
+export const detectObjects = async (
+  base64Image: string, 
+  target: string = "biological cells"
+): Promise<CellAnnotation[]> => {
   const ai = getAiClient();
 
-  // Using gemini-2.5-flash for fast multimodal analysis
-  const modelId = 'gemini-2.5-flash';
+  // Using gemini-3-pro-preview as requested for advanced image understanding
+  const modelId = 'gemini-3-pro-preview';
 
   const prompt = `
-    Analyze this microscopy image as if you are a CellPose model.
-    Identify distinct biological cells or nuclei.
-    Return a list of bounding boxes for each detected cell.
+    Analyze this image and identify all instances of: ${target}.
+    Return a list of bounding boxes for each detected instance.
+    Be thorough and include small or partially visible instances.
     The coordinates should be normalized (0.0 to 1.0).
     Assign a confidence score (0.0 to 1.0) based on clarity.
-    If you see different types, label them (e.g., "cell", "nucleus"), otherwise default to "cell".
+    Label them as "${target}" or specific subtypes if applicable.
   `;
 
   try {
@@ -48,12 +51,12 @@ export const detectCells = async (base64Image: string): Promise<CellAnnotation[]
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
-          description: "List of detected cells",
+          description: `List of detected ${target}`,
           items: {
             type: Type.OBJECT,
             properties: {
-              id: { type: Type.STRING, description: "Unique identifier for the cell" },
-              label: { type: Type.STRING, description: "Class label, e.g., 'cell' or 'nucleus'" },
+              id: { type: Type.STRING, description: "Unique identifier for the object" },
+              label: { type: Type.STRING, description: "Class label" },
               confidence: { type: Type.NUMBER, description: "Confidence score 0-1" },
               bbox: {
                 type: Type.ARRAY,

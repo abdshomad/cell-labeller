@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [brushSize, setBrushSize] = useState(10);
   const [isProcessing, setIsProcessing] = useState(false);
   const [triggerAutoSegment, setTriggerAutoSegment] = useState(false);
+  const [segmentationTarget, setSegmentationTarget] = useState("biological cells");
   const [scale, setScale] = useState(1);
   
   // Image Management
@@ -33,7 +34,7 @@ const App: React.FC = () => {
     {
       targetId: null,
       title: "Welcome to CellScout",
-      description: "A professional AI-powered tool for microscopy cell annotation and segmentation. Let's take a quick tour of the features.",
+      description: "A professional AI-powered tool for microscopy cell annotation and generic object detection. Let's take a quick tour.",
       position: 'center'
     },
     {
@@ -44,49 +45,72 @@ const App: React.FC = () => {
     },
     {
       targetId: 'btn-auto-segment',
-      title: "AI Auto-Segment",
-      description: "Click this button to let the Gemini AI model analyze your image and automatically detect cells. It generates editable masks instantly.",
+      title: "AI Analysis",
+      description: "Click this button to analyze your image. You can ask Gemini to find specific objects (like 'cells', 'chickens', 'cars').",
       position: 'right'
     },
     {
       targetId: 'gallery-panel',
       title: "Image Gallery",
-      description: "Manage your workspace here. Upload new microscopy images, switch between them, and delete ones you don't need.",
+      description: "Manage your workspace here. Upload new images, switch between them, and delete ones you don't need.",
       position: 'left'
     },
     {
       targetId: 'canvas-board',
       title: "Workspace",
-      description: "This is your main canvas. You can zoom in/out using the controls or scroll wheel. AI detections will appear here as colored overlays.",
+      description: "This is your main canvas. You can zoom in/out using the controls. AI detections will appear here as colored overlays.",
       position: 'top'
     },
     {
       targetId: 'btn-export',
       title: "Export Data",
-      description: "When you're done, export your data as CSV coordinates, JSON datasets, or binary PNG masks for downstream analysis.",
+      description: "When you're done, export your data as CSV coordinates, JSON datasets, or binary PNG masks.",
       position: 'right'
     }
   ];
 
-  // Initialize with a demo image
+  // Initialize with demo images
   useEffect(() => {
     const initDemo = async () => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = "https://picsum.photos/800/600?grayscale";
-      img.onload = () => {
-        const newImage: ProjectImage = {
-          id: generateId(),
-          name: "demo_sample.jpg",
-          src: img.src,
-          width: img.width,
-          height: img.height,
-          annotations: [],
-          maskData: null
-        };
-        setImages([newImage]);
-        setActiveImageId(newImage.id);
+      const loadedImages: ProjectImage[] = [];
+      
+      // 1. Load Microscopy Demo
+      const img1 = new Image();
+      img1.crossOrigin = "anonymous";
+      img1.src = "https://picsum.photos/800/600?grayscale";
+      
+      // 2. Load Chicken Demo
+      const img2 = new Image();
+      img2.crossOrigin = "anonymous";
+      img2.src = "https://images.unsplash.com/photo-1569260399093-59e853436158?auto=format&fit=crop&w=800&q=80";
+
+      const waitForLoad = (img: HTMLImageElement, name: string) => {
+        return new Promise<void>((resolve) => {
+          img.onload = () => {
+             loadedImages.push({
+              id: generateId(),
+              name: name,
+              src: img.src,
+              width: img.width,
+              height: img.height,
+              annotations: [],
+              maskData: null
+            });
+            resolve();
+          };
+          img.onerror = () => resolve(); // proceed even if error
+        });
       };
+
+      await Promise.all([
+        waitForLoad(img1, "microscopy_sample.jpg"),
+        waitForLoad(img2, "chickens_sample.jpg")
+      ]);
+
+      if (loadedImages.length > 0) {
+        setImages(loadedImages);
+        setActiveImageId(loadedImages[0].id);
+      }
     };
     initDemo();
   }, []);
@@ -192,6 +216,16 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAutoSegment = () => {
+    const defaultPrompt = activeImage?.name.includes('chicken') ? 'chickens' : 'biological cells';
+    const target = prompt("What would you like to detect in this image?", defaultPrompt);
+    
+    if (target) {
+      setSegmentationTarget(target);
+      setTriggerAutoSegment(true);
+    }
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -229,7 +263,7 @@ const App: React.FC = () => {
         onToolChange={setActiveTool}
         onUpload={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()} 
         onDownload={handleExportRequest}
-        onAutoSegment={() => setTriggerAutoSegment(true)}
+        onAutoSegment={handleAutoSegment}
         onClearMask={handleClearMask}
         isProcessing={isProcessing}
         brushSize={brushSize}
@@ -274,6 +308,7 @@ const App: React.FC = () => {
           brushSize={brushSize}
           triggerAutoSegment={triggerAutoSegment}
           setTriggerAutoSegment={setTriggerAutoSegment}
+          segmentationTarget={segmentationTarget}
           setIsProcessing={setIsProcessing}
           scale={scale}
           setScale={setScale}

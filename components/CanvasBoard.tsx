@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { ToolMode, Point, CellAnnotation, ProjectImage } from '../types';
 import { getMousePos, screenToWorld, drawAIAnnotations } from '../utils/canvasUtils';
-import { detectCells } from '../services/gemini';
+import { detectObjects } from '../services/gemini';
 
 interface CanvasBoardProps {
   activeImage: ProjectImage | null;
@@ -9,6 +9,7 @@ interface CanvasBoardProps {
   brushSize: number;
   triggerAutoSegment: boolean;
   setTriggerAutoSegment: (v: boolean) => void;
+  segmentationTarget: string;
   setIsProcessing: (v: boolean) => void;
   scale: number;
   setScale: (v: number) => void;
@@ -25,6 +26,7 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
   brushSize,
   triggerAutoSegment,
   setTriggerAutoSegment,
+  segmentationTarget,
   setIsProcessing,
   scale,
   setScale
@@ -122,19 +124,19 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
             // Use JPEG for faster upload, reasonable quality
             const base64 = tempCanvas.toDataURL('image/jpeg', 0.8).split(',')[1];
             
-            const cells = await detectCells(base64);
-            setDetectedCells(cells);
+            const objects = await detectObjects(base64, segmentationTarget);
+            setDetectedCells(objects);
 
             // Draw results onto the mask layer
             const maskCtx = maskCanvasRef.current.getContext('2d');
             if (maskCtx) {
-              drawAIAnnotations(maskCtx, cells, loadedImg.width, loadedImg.height);
+              drawAIAnnotations(maskCtx, objects, loadedImg.width, loadedImg.height);
             }
             draw();
           }
         } catch (e) {
           console.error("Segmentation failed", e);
-          alert("AI Segmentation failed. Please check your API key and try again.");
+          alert("AI Analysis failed. Please check your API key and try again.");
         } finally {
           setIsProcessing(false);
           setTriggerAutoSegment(false);
@@ -276,7 +278,7 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
            <div className="bg-slate-900/80 backdrop-blur p-3 rounded-lg border border-slate-700 text-xs font-mono text-slate-400 shadow-xl">
              <div>ZOOM: {(scale * 100).toFixed(0)}%</div>
              <div>RES: {activeImage.width}x{activeImage.height}</div>
-             <div>CELLS: {detectedCells.length}</div>
+             <div>COUNT: {detectedCells.length}</div>
            </div>
         </div>
       )}
