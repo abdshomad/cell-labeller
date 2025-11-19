@@ -4,7 +4,6 @@ import {
   Eraser, 
   Hand, 
   Download, 
-  Upload, 
   Bot, 
   ZoomIn, 
   ZoomOut,
@@ -15,7 +14,7 @@ import { ToolMode } from '../types';
 interface ToolbarProps {
   activeTool: ToolMode;
   onToolChange: (tool: ToolMode) => void;
-  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpload: (e: any) => void; // Type kept for compatibility but unused here
   onDownload: () => void;
   onAutoSegment: () => void;
   onClearMask: () => void;
@@ -29,7 +28,6 @@ interface ToolbarProps {
 export const Toolbar: React.FC<ToolbarProps> = ({
   activeTool,
   onToolChange,
-  onUpload,
   onDownload,
   onAutoSegment,
   onClearMask,
@@ -54,7 +52,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   `;
 
   return (
-    <div className="w-20 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-xl">
+    <div className="w-20 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-xl shrink-0">
       <div className="mb-6">
         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-indigo-500/20 shadow-lg">
           <span className="font-bold text-white text-xl">C</span>
@@ -149,20 +147,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <Trash2 size={20} />
         </button>
 
-        <div className="relative">
-           <input
-            type="file"
-            accept="image/*"
-            onChange={onUpload}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            title="Upload Image"
-          />
-          <button className={actionButtonClass}>
-            <Upload size={20} />
-          </button>
-        </div>
-
-        <button onClick={onDownload} className={actionButtonClass} title="Export Mask">
+        <button onClick={onDownload} className={actionButtonClass} title="Export Data">
           <Download size={20} />
         </button>
       </div>

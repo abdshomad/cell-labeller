@@ -27,3 +27,15 @@ export interface EditorState {
   showOriginal: boolean;
   showMask: boolean;
 }
+
+export interface ProjectImage {
+  id: string;
+  name: string;
+  src: string; // Base64 or URL
+  width: number;
+  height: number;
+  annotations: CellAnnotation[];
+  maskData: string | null; // Base64 of the mask layer
+}
+
+export type ExportFormat = 'json' | 'csv' | 'png_mask';
