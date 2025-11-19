@@ -1,5 +1,6 @@
+
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
-import { ToolMode, Point, CellAnnotation, ProjectImage } from '../types';
+import { ToolMode, Point, CellAnnotation, ProjectImage, ViewMode } from '../types';
 import { getMousePos, screenToWorld, drawAIAnnotations } from '../utils/canvasUtils';
 import { detectObjects } from '../services/gemini';
 
@@ -13,6 +14,7 @@ interface CanvasBoardProps {
   setIsProcessing: (v: boolean) => void;
   scale: number;
   setScale: (v: number) => void;
+  viewMode: ViewMode;
 }
 
 export interface CanvasBoardRef {
@@ -29,7 +31,8 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
   segmentationTarget,
   setIsProcessing,
   scale,
-  setScale
+  setScale,
+  viewMode
 }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -158,28 +161,74 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
     
     if (!loadedImg) return;
 
-    ctx.save();
-    
-    // Apply transformations
-    ctx.translate(offset.x, offset.y);
-    ctx.scale(scale, scale);
-    
-    // 1. Draw Image
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(loadedImg, 0, 0);
+    const w = canvas.width;
+    const h = canvas.height;
 
-    // 2. Draw Mask (Composite)
-    ctx.globalAlpha = 0.6;
-    ctx.drawImage(maskCanvasRef.current, 0, 0);
-    ctx.globalAlpha = 1.0;
+    if (viewMode === 'split') {
+      const halfW = w / 2;
 
-    ctx.restore();
-  }, [loadedImg, offset, scale]);
+      // --- LEFT VIEWPORT: Original Image ---
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, halfW, h);
+      ctx.clip();
+      
+      ctx.translate(offset.x, offset.y);
+      ctx.scale(scale, scale);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(loadedImg, 0, 0);
+      ctx.restore();
+
+      // --- RIGHT VIEWPORT: Analysis (Image + Mask) ---
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(halfW, 0, halfW, h);
+      ctx.clip();
+
+      // Shift origin to the right split pane
+      ctx.translate(halfW + offset.x, offset.y); 
+      ctx.scale(scale, scale);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(loadedImg, 0, 0);
+      
+      // Draw Overlay
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(maskCanvasRef.current, 0, 0);
+      ctx.globalAlpha = 1.0;
+      ctx.restore();
+
+      // --- Split Line ---
+      ctx.beginPath();
+      ctx.moveTo(halfW, 0);
+      ctx.lineTo(halfW, h);
+      ctx.strokeStyle = '#334155'; // slate-700
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // --- Labels ---
+      ctx.font = "10px monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillText("ORIGINAL", 10, 20);
+      ctx.fillText("DETECTED", halfW + 10, 20);
+
+    } else {
+      // --- SINGLE VIEWPORT: Standard ---
+      ctx.save();
+      ctx.translate(offset.x, offset.y);
+      ctx.scale(scale, scale);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(loadedImg, 0, 0);
+      ctx.globalAlpha = 0.6;
+      ctx.drawImage(maskCanvasRef.current, 0, 0);
+      ctx.globalAlpha = 1.0;
+      ctx.restore();
+    }
+  }, [loadedImg, offset, scale, viewMode]);
 
   // Render loop on state change
   useEffect(() => {
     draw();
-  }, [draw, offset, scale, detectedCells]);
+  }, [draw, offset, scale, detectedCells, viewMode]);
 
   // Resize observer
   useEffect(() => {
@@ -200,6 +249,12 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
     if (!loadedImg) return;
     const pos = getMousePos(canvasRef.current!, e);
     
+    // In Split Mode, prevent editing on the "Original" (left) side
+    if (viewMode === 'split' && activeTool !== ToolMode.PAN) {
+      const halfW = canvasRef.current!.width / 2;
+      if (pos.x < halfW) return;
+    }
+
     if (activeTool === ToolMode.PAN) {
       setIsDragging(true);
       setLastPos(pos);
@@ -233,7 +288,19 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
   const paint = (screenPos: Point) => {
     if (!loadedImg) return;
     
-    const worldPos = screenToWorld(screenPos, offset, scale);
+    // Adjust screen coordinates for split view (map right side to world, ignore left side for painting)
+    let effectiveX = screenPos.x;
+    if (viewMode === 'split') {
+      const halfW = canvasRef.current!.width / 2;
+      if (effectiveX > halfW) {
+        effectiveX -= halfW;
+      } else {
+        // Safety catch: if we are somehow painting on left, do nothing
+        return;
+      }
+    }
+
+    const worldPos = screenToWorld({ ...screenPos, x: effectiveX }, offset, scale);
     const maskCtx = maskCanvasRef.current.getContext('2d');
     if (!maskCtx) return;
 
@@ -279,6 +346,7 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
              <div>ZOOM: {(scale * 100).toFixed(0)}%</div>
              <div>RES: {activeImage.width}x{activeImage.height}</div>
              <div>COUNT: {detectedCells.length}</div>
+             <div>MODE: {viewMode === 'split' ? 'SPLIT' : 'SINGLE'}</div>
            </div>
         </div>
       )}

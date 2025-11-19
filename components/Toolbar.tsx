@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Brush, 
@@ -7,9 +8,11 @@ import {
   Bot, 
   ZoomIn, 
   ZoomOut,
-  Trash2
+  Trash2,
+  Columns,
+  Square
 } from 'lucide-react';
-import { ToolMode } from '../types';
+import { ToolMode, ViewMode } from '../types';
 
 interface ToolbarProps {
   activeTool: ToolMode;
@@ -23,6 +26,8 @@ interface ToolbarProps {
   setBrushSize: (size: number) => void;
   scale: number;
   setScale: (scale: number) => void;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -35,7 +40,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   brushSize,
   setBrushSize,
   scale,
-  setScale
+  setScale,
+  viewMode,
+  setViewMode
 }) => {
   
   const buttonClass = (tool: ToolMode) => `
@@ -106,6 +113,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
       {/* Actions */}
       <div className="flex flex-col w-full px-3 mt-auto">
+        <button 
+          onClick={() => setViewMode(viewMode === 'single' ? 'split' : 'single')}
+          className={actionButtonClass}
+          title={viewMode === 'single' ? "Switch to Split View" : "Switch to Single View"}
+        >
+          {viewMode === 'single' ? <Columns size={20} /> : <Square size={20} />}
+        </button>
+
         <button 
           onClick={() => setScale(scale * 1.1)}
           className={actionButtonClass}

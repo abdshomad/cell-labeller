@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar';
 import { CanvasBoard, CanvasBoardRef } from './components/CanvasBoard';
 import { Gallery } from './components/Gallery';
 import { ExportModal } from './components/ExportModal';
 import { Tour } from './components/Tour';
-import { ToolMode, ProjectImage, ExportFormat, TourStep } from './types';
+import { ToolMode, ProjectImage, ExportFormat, TourStep, ViewMode } from './types';
 import { exportToCSV, exportToJSON, downloadImage } from './utils/canvasUtils';
 import { CircleHelp } from 'lucide-react';
 
@@ -18,6 +19,7 @@ const App: React.FC = () => {
   const [triggerAutoSegment, setTriggerAutoSegment] = useState(false);
   const [segmentationTarget, setSegmentationTarget] = useState("biological cells");
   const [scale, setScale] = useState(1);
+  const [viewMode, setViewMode] = useState<ViewMode>('single');
   
   // Image Management
   const [images, setImages] = useState<ProjectImage[]>([]);
@@ -270,6 +272,8 @@ const App: React.FC = () => {
         setBrushSize={setBrushSize}
         scale={scale}
         setScale={setScale}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
       />
 
       {/* Main Canvas Area */}
@@ -312,6 +316,7 @@ const App: React.FC = () => {
           setIsProcessing={setIsProcessing}
           scale={scale}
           setScale={setScale}
+          viewMode={viewMode}
         />
       </div>
 

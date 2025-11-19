@@ -1,9 +1,12 @@
+
 export enum ToolMode {
   PAN = 'PAN',
   BRUSH = 'BRUSH',
   ERASER = 'ERASER',
   PICKER = 'PICKER'
 }
+
+export type ViewMode = 'single' | 'split';
 
 export interface Point {
   x: number;
