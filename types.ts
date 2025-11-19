@@ -39,3 +39,10 @@ export interface ProjectImage {
 }
 
 export type ExportFormat = 'json' | 'csv' | 'png_mask';
+
+export interface TourStep {
+  targetId: string | null; // null indicates a centered modal (no specific target)
+  title: string;
+  description: string;
+  position?: 'left' | 'right' | 'top' | 'bottom' | 'center';
+}

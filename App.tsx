@@ -3,12 +3,12 @@ import { Toolbar } from './components/Toolbar';
 import { CanvasBoard, CanvasBoardRef } from './components/CanvasBoard';
 import { Gallery } from './components/Gallery';
 import { ExportModal } from './components/ExportModal';
-import { ToolMode, ProjectImage, ExportFormat } from './types';
+import { Tour } from './components/Tour';
+import { ToolMode, ProjectImage, ExportFormat, TourStep } from './types';
 import { exportToCSV, exportToJSON, downloadImage } from './utils/canvasUtils';
-import { v4 as uuidv4 } from 'uuid'; // We need a unique ID generator, or simple random
+import { CircleHelp } from 'lucide-react';
 
-// Simple ID generator if uuid package isn't available in environment, 
-// but since we can't easily add packages, let's use a helper
+// Simple ID generator if uuid package isn't available in environment
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 const App: React.FC = () => {
@@ -22,10 +22,51 @@ const App: React.FC = () => {
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [activeImageId, setActiveImageId] = useState<string | null>(null);
   
-  // Export UI
+  // Modals & Tour
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   const canvasRef = useRef<CanvasBoardRef>(null);
+
+  // Define Tour Steps
+  const tourSteps: TourStep[] = [
+    {
+      targetId: null,
+      title: "Welcome to CellScout",
+      description: "A professional AI-powered tool for microscopy cell annotation and segmentation. Let's take a quick tour of the features.",
+      position: 'center'
+    },
+    {
+      targetId: 'tools-group',
+      title: "Annotation Tools",
+      description: "Use the Brush and Eraser to manually label or correct masks. Use the Pan tool (or hold Space) to navigate large images.",
+      position: 'right'
+    },
+    {
+      targetId: 'btn-auto-segment',
+      title: "AI Auto-Segment",
+      description: "Click this button to let the Gemini AI model analyze your image and automatically detect cells. It generates editable masks instantly.",
+      position: 'right'
+    },
+    {
+      targetId: 'gallery-panel',
+      title: "Image Gallery",
+      description: "Manage your workspace here. Upload new microscopy images, switch between them, and delete ones you don't need.",
+      position: 'left'
+    },
+    {
+      targetId: 'canvas-board',
+      title: "Workspace",
+      description: "This is your main canvas. You can zoom in/out using the controls or scroll wheel. AI detections will appear here as colored overlays.",
+      position: 'top'
+    },
+    {
+      targetId: 'btn-export',
+      title: "Export Data",
+      description: "When you're done, export your data as CSV coordinates, JSON datasets, or binary PNG masks for downstream analysis.",
+      position: 'right'
+    }
+  ];
 
   // Initialize with a demo image
   useEffect(() => {
@@ -122,15 +163,6 @@ const App: React.FC = () => {
   const performExport = (format: ExportFormat) => {
     if (!activeImage) return;
     
-    // We need to ensure the latest state is in `activeImage`.
-    // Since setState is async, and we called saveCurrentState() before opening modal,
-    // the `activeImage` from the find() selector should be fresh enough if re-rendered, 
-    // but let's double check by pulling from canvas if modal was opened without switching.
-    
-    // However, since modal is open, canvas is still there. 
-    // The state might have been updated when modal opened.
-    // Let's use the latest `activeImage` from state.
-    
     switch (format) {
       case 'csv':
         exportToCSV(activeImage);
@@ -157,8 +189,6 @@ const App: React.FC = () => {
         }
         return img;
       }));
-      // Force re-render of canvas is handled by useEffect in CanvasBoard when prop changes,
-      // but maskData changing to null should trigger the canvas clear logic there.
     }
   };
 
@@ -166,7 +196,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore shortcuts if modal is open
-      if (showExportModal) return;
+      if (showExportModal || isTourOpen) return;
 
       if (e.key === ' ' && activeTool !== ToolMode.PAN) {
         setActiveTool(ToolMode.PAN);
@@ -189,7 +219,7 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [activeTool, showExportModal]);
+  }, [activeTool, showExportModal, isTourOpen]);
 
   return (
     <div className="flex h-screen w-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
@@ -197,7 +227,7 @@ const App: React.FC = () => {
       <Toolbar 
         activeTool={activeTool} 
         onToolChange={setActiveTool}
-        onUpload={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()} // Proxy to hidden input in gallery? Or we remove upload from Toolbar and keep in Gallery
+        onUpload={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()} 
         onDownload={handleExportRequest}
         onAutoSegment={() => setTriggerAutoSegment(true)}
         onClearMask={handleClearMask}
@@ -215,6 +245,13 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
             <h1 className="font-semibold text-slate-100 tracking-tight">CellScout</h1>
             <span className="text-xs bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20 font-mono">PRO</span>
+            <button 
+              onClick={() => setIsTourOpen(true)}
+              className="ml-2 text-slate-500 hover:text-indigo-400 transition-colors p-1 rounded-full hover:bg-slate-800"
+              title="Start Tour"
+            >
+              <CircleHelp size={18} />
+            </button>
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-400">
              {activeImage && <span className="font-mono text-xs opacity-50 mr-2">{activeImage.name}</span>}
@@ -258,6 +295,12 @@ const App: React.FC = () => {
         onClose={() => setShowExportModal(false)}
         onExport={performExport}
         imageName={activeImage?.name || "Untitled"}
+      />
+
+      <Tour 
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        steps={tourSteps}
       />
     </div>
   );

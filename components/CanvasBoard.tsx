@@ -252,6 +252,7 @@ export const CanvasBoard = forwardRef<CanvasBoardRef, CanvasBoardProps>(({
 
   return (
     <div 
+      id="canvas-board"
       ref={containerRef} 
       className={`flex-1 relative bg-black overflow-hidden cursor-${activeTool === ToolMode.PAN ? (isDragging ? 'grabbing' : 'grab') : 'crosshair'}`}
       onMouseDown={handleMouseDown}

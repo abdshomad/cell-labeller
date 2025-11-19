@@ -18,7 +18,7 @@ export const Gallery: React.FC<GalleryProps> = ({
   onDelete
 }) => {
   return (
-    <div className="w-64 bg-slate-900 border-l border-slate-800 flex flex-col h-full z-20 shadow-xl">
+    <div id="gallery-panel" className="w-64 bg-slate-900 border-l border-slate-800 flex flex-col h-full z-20 shadow-xl">
       <div className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur">
         <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Gallery</h2>
         <div className="relative group">

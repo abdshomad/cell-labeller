@@ -52,7 +52,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   `;
 
   return (
-    <div className="w-20 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-xl shrink-0">
+    <div id="main-toolbar" className="w-20 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-6 h-full z-20 shadow-xl shrink-0">
       <div className="mb-6">
         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-indigo-500/20 shadow-lg">
           <span className="font-bold text-white text-xl">C</span>
@@ -60,7 +60,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       {/* Primary Tools */}
-      <div className="flex flex-col w-full px-3 space-y-1">
+      <div id="tools-group" className="flex flex-col w-full px-3 space-y-1">
         <button 
           onClick={() => onToolChange(ToolMode.PAN)}
           className={buttonClass(ToolMode.PAN)}
@@ -124,6 +124,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         <div className="w-full h-px bg-slate-800 my-2"></div>
 
         <button 
+          id="btn-auto-segment"
           onClick={onAutoSegment}
           disabled={isProcessing}
           className={`
@@ -147,7 +148,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           <Trash2 size={20} />
         </button>
 
-        <button onClick={onDownload} className={actionButtonClass} title="Export Data">
+        <button id="btn-export" onClick={onDownload} className={actionButtonClass} title="Export Data">
           <Download size={20} />
         </button>
       </div>
