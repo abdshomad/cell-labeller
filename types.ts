@@ -1,0 +1,29 @@
+export enum ToolMode {
+  PAN = 'PAN',
+  BRUSH = 'BRUSH',
+  ERASER = 'ERASER',
+  PICKER = 'PICKER'
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface CellAnnotation {
+  id: string;
+  bbox: [number, number, number, number]; // ymin, xmin, ymax, xmax (normalized 0-1)
+  confidence: number;
+  label: string;
+}
+
+export interface EditorState {
+  scale: number;
+  offset: Point;
+  isDragging: boolean;
+  lastMousePos: Point | null;
+  brushSize: number;
+  opacity: number;
+  showOriginal: boolean;
+  showMask: boolean;
+}

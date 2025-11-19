@@ -1,0 +1,5 @@
+{
+  "name": "CellScout - AI Cell Labelling",
+  "description": "A professional-grade microscopy image annotation tool featuring manual brush controls and AI-powered cell detection simulating CellPose workflows.",
+  "requestFramePermissions": []
+}
